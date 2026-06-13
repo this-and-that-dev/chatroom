@@ -68,6 +68,15 @@ class RoomTextControllerTest {
             .andExpect(jsonPath("$.text", is("")));
     }
 
-    private record TextRequest(String text) {
+    private static class TextRequest {
+        private final String text;
+
+        TextRequest(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
+        }
     }
 }

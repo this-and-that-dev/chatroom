@@ -26,13 +26,44 @@ public class RoomTextController {
 
     @PutMapping("/{roomId}/text")
     public RoomTextResponse saveText(@PathVariable String roomId, @RequestBody TextRequest request) {
-        String savedText = roomTextStore.saveText(roomId, request.text());
+        String savedText = roomTextStore.saveText(roomId, request.getText());
         return new RoomTextResponse(roomId, savedText);
     }
 
-    public record TextRequest(String text) {
+    public static class TextRequest {
+        private String text;
+
+        public TextRequest() {
+        }
+
+        public TextRequest(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
     }
 
-    public record RoomTextResponse(String roomId, String text) {
+    public static class RoomTextResponse {
+        private final String roomId;
+        private final String text;
+
+        public RoomTextResponse(String roomId, String text) {
+            this.roomId = roomId;
+            this.text = text;
+        }
+
+        public String getRoomId() {
+            return roomId;
+        }
+
+        public String getText() {
+            return text;
+        }
     }
 }
