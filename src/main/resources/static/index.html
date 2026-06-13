@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room Text Share</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, "Apple SD Gothic Neo", sans-serif;
+      background: #f6f7f9;
+      color: #20242a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    main {
+      width: min(720px, 100%);
+      background: #ffffff;
+      border: 1px solid #dde1e7;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 10px 28px rgba(25, 32, 44, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 8px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      font: inherit;
+      border-radius: 6px;
+    }
+
+    input,
+    textarea {
+      border: 1px solid #c9d0da;
+      padding: 12px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    button {
+      margin-top: 14px;
+      border: 0;
+      padding: 12px 16px;
+      background: #1769e0;
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1257bb;
+    }
+
+    .status {
+      min-height: 22px;
+      margin-top: 12px;
+      color: #4f5b6b;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>방 텍스트 공유</h1>
+
+    <label for="roomId">방 이름</label>
+    <input id="roomId" value="default" autocomplete="off">
+
+    <label for="text">텍스트</label>
+    <textarea id="text" placeholder="같은 방을 연 다른 브라우저에 이 내용이 표시됩니다."></textarea>
+
+    <button id="saveButton" type="button">저장</button>
+    <div id="status" class="status">대기 중</div>
+  </main>
+
+  <script>
+    const roomInput = document.querySelector("#roomId");
+    const textInput = document.querySelector("#text");
+    const saveButton = document.querySelector("#saveButton");
+    const statusEl = document.querySelector("#status");
+
+    let lastLoadedText = "";
+    let isEditing = false;
+    let editTimer = 0;
+
+    function apiBase() {
+      if (location.protocol === "file:") {
+        return "http://localhost:8080";
+      }
+      return "";
+    }
+
+    function roomId() {
+      return encodeURIComponent(roomInput.value.trim() || "default");
+    }
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    async function loadText() {
+      const response = await fetch(`${apiBase()}/api/rooms/${roomId()}/text`);
+      if (!response.ok) {
+        throw new Error(`load failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!isEditing && data.text !== lastLoadedText) {
+        textInput.value = data.text;
+        lastLoadedText = data.text;
+      }
+      setStatus(`방 '${data.roomId}' 동기화됨`);
+    }
+
+    async function saveText() {
+      const response = await fetch(`${apiBase()}/api/rooms/${roomId()}/text`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textInput.value })
+      });
+      if (!response.ok) {
+        throw new Error(`save failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      lastLoadedText = data.text;
+      setStatus(`방 '${data.roomId}' 저장됨`);
+    }
+
+    async function run(action) {
+      try {
+        await action();
+      } catch (error) {
+        setStatus("서버에 연결할 수 없습니다.");
+      }
+    }
+
+    roomInput.addEventListener("change", () => run(loadText));
+    textInput.addEventListener("input", () => {
+      isEditing = true;
+      clearTimeout(editTimer);
+      editTimer = setTimeout(() => {
+        isEditing = false;
+      }, 1200);
+    });
+    saveButton.addEventListener("click", () => run(saveText));
+
+    run(loadText);
+    setInterval(() => run(loadText), 1500);
+  </script>
+</body>
+</html>
