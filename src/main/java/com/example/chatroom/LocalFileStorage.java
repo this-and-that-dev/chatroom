@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -37,10 +38,10 @@ public class LocalFileStorage {
 
     private String cleanFileName(String originalFileName) throws IOException {
         String fileName = StringUtils.cleanPath(originalFileName == null ? "" : originalFileName);
-        if (fileName.isBlank() || fileName.contains("..")) {
+        if (fileName.trim().isEmpty() || fileName.contains("..")) {
             throw new IOException("Invalid file name");
         }
-        return Path.of(fileName).getFileName().toString();
+        return Paths.get(fileName).getFileName().toString();
     }
 
     public static class StoredFile {

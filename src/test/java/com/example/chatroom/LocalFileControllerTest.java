@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -50,6 +51,7 @@ class LocalFileControllerTest {
 
         Path savedFile = uploadDir.resolve("memo.txt");
         org.assertj.core.api.Assertions.assertThat(savedFile).exists();
-        org.assertj.core.api.Assertions.assertThat(Files.readString(savedFile)).isEqualTo("업무컴퓨터에서 보낸 파일");
+        String savedContent = new String(Files.readAllBytes(savedFile), StandardCharsets.UTF_8);
+        org.assertj.core.api.Assertions.assertThat(savedContent).isEqualTo("업무컴퓨터에서 보낸 파일");
     }
 }
