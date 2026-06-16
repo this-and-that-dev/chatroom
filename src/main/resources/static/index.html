@@ -1,390 +1,462 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Room Text Bridge</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: Arial, "Apple SD Gothic Neo", sans-serif;
-      background: #f4f6f8;
-      color: #20242a;
-    }
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Room Text Bridge</title>
+	<style>
+        :root {
+            color-scheme: light;
+            font-family: Arial, "Apple SD Gothic Neo", sans-serif;
+            background: #f4f6f8;
+            color: #20242a;
+        }
 
-    * {
-      box-sizing: border-box;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: 24px;
-    }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+        }
 
-    main {
-      width: min(1180px, 100%);
-      margin: 0 auto;
-    }
+        main {
+            width: min(1180px, 100%);
+            margin: 0 auto;
+        }
 
-    h1 {
-      margin: 0 0 18px;
-      font-size: 24px;
-      line-height: 1.25;
-    }
+        h1 {
+            margin: 0 0 18px;
+            font-size: 24px;
+            line-height: 1.25;
+        }
 
-    label {
-      display: block;
-      margin: 0 0 8px;
-      font-weight: 700;
-    }
+        label {
+            display: block;
+            margin: 0 0 8px;
+            font-weight: 700;
+        }
 
-    input,
-    textarea,
-    button {
-      width: 100%;
-      font: inherit;
-      border-radius: 6px;
-    }
+        input,
+        button {
+            width: 100%;
+            font: inherit;
+            border-radius: 6px;
+        }
 
-    input,
-    textarea {
-      border: 1px solid #c9d0da;
-      padding: 12px;
-      background: #ffffff;
-      color: #20242a;
-    }
+        input {
+            border: 1px solid #c9d0da;
+            padding: 12px;
+            background: #ffffff;
+            color: #20242a;
+        }
 
-    textarea {
-      min-height: 320px;
-      resize: vertical;
-      line-height: 1.5;
-    }
+        /* [수정] textarea 스타일을 contenteditable div에 적용하도록 변경 */
+        .rich-editor {
+            width: 100%;
+            min-height: 320px;
+            border: 1px solid #c9d0da;
+            padding: 12px;
+            background: #ffffff;
+            color: #20242a;
+            border-radius: 6px;
+            font: inherit;
+            line-height: 1.5;
+            overflow-y: auto;
+            word-break: break-all;
+        }
 
-    button {
-      border: 0;
-      padding: 11px 14px;
-      background: #1769e0;
-      color: #ffffff;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
+        /* [추가] 붙여넣은 이미지가 입력창 밖으로 삐져나가지 않도록 방지 */
+        .rich-editor img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
 
-    button.secondary {
-      background: #39465a;
-    }
+        /* [추가] div에 placeholder(안내 문구) 효과 주기 */
+        .rich-editor:empty:before {
+            content: attr(placeholder);
+            color: #a0aab5;
+        }
 
-    button:hover {
-      filter: brightness(0.93);
-    }
+        button {
+            border: 0;
+            padding: 11px 14px;
+            background: #1769e0;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
 
-    .top-grid {
-      display: grid;
-      grid-template-columns: 180px 1fr;
-      gap: 14px;
-      align-items: end;
-      margin-bottom: 18px;
-    }
+        button.secondary {
+            background: #39465a;
+        }
 
-    .fixed-api {
-      min-height: 45px;
-      display: flex;
-      align-items: center;
-      overflow-wrap: anywhere;
-      border: 1px solid #c9d0da;
-      border-radius: 6px;
-      padding: 12px;
-      background: #ffffff;
-      color: #20242a;
-    }
+        button:hover {
+            filter: brightness(0.93);
+        }
 
-    .panels {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
+        .top-grid {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 14px;
+            align-items: end;
+            margin-bottom: 18px;
+        }
 
-    .panels.remote-only {
-      grid-template-columns: 1fr;
-    }
+        .fixed-api {
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            overflow-wrap: anywhere;
+            border: 1px solid #c9d0da;
+            border-radius: 6px;
+            padding: 12px;
+            background: #ffffff;
+            color: #20242a;
+        }
 
-    .panel {
-      background: #ffffff;
-      border: 1px solid #dde1e7;
-      border-radius: 8px;
-      padding: 18px;
-      box-shadow: 0 10px 28px rgba(25, 32, 44, 0.08);
-    }
+        .panels {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
 
-    .panel h2 {
-      margin: 0 0 14px;
-      font-size: 18px;
-      line-height: 1.3;
-    }
+        .panels.remote-only {
+            grid-template-columns: 1fr;
+        }
 
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 12px;
-    }
+        .panel {
+            background: #ffffff;
+            border: 1px solid #dde1e7;
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 10px 28px rgba(25, 32, 44, 0.08);
+        }
 
-    .bridge-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 18px;
-    }
+        .panel h2 {
+            margin: 0 0 14px;
+            font-size: 18px;
+            line-height: 1.3;
+        }
 
-    .file-transfer {
-      margin-top: 18px;
-      background: #ffffff;
-      border: 1px solid #dde1e7;
-      border-radius: 8px;
-      padding: 18px;
-      box-shadow: 0 10px 28px rgba(25, 32, 44, 0.08);
-    }
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
 
-    .file-transfer h2 {
-      margin: 0 0 14px;
-      font-size: 18px;
-      line-height: 1.3;
-    }
+        .bridge-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
 
-    .file-row {
-      display: grid;
-      grid-template-columns: 1fr 180px;
-      gap: 10px;
-      align-items: end;
-    }
+        .file-transfer {
+            margin-top: 18px;
+            background: #ffffff;
+            border: 1px solid #dde1e7;
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 10px 28px rgba(25, 32, 44, 0.08);
+        }
 
-    .status {
-      min-height: 22px;
-      margin-top: 12px;
-      color: #4f5b6b;
-      font-size: 14px;
-    }
+        .file-transfer h2 {
+            margin: 0 0 14px;
+            font-size: 18px;
+            line-height: 1.3;
+        }
 
-    @media (max-width: 860px) {
-      body {
-        padding: 16px;
-      }
+        .file-row {
+            display: grid;
+            grid-template-columns: 1fr 180px;
+            gap: 10px;
+            align-items: end;
+        }
 
-      .top-grid,
-      .panels,
-      .bridge-actions,
-      .file-row {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+        .status {
+            min-height: 22px;
+            margin-top: 12px;
+            color: #4f5b6b;
+            font-size: 14px;
+        }
+
+        @media (max-width: 860px) {
+            body {
+                padding: 16px;
+            }
+
+            .top-grid,
+            .panels,
+            .bridge-actions,
+            .file-row {
+                grid-template-columns: 1fr;
+            }
+        }
+	</style>
 </head>
 <body>
-  <main>
-    <h1>방 텍스트 브릿지</h1>
+<main>
+	<h1>방 텍스트 브릿지</h1>
 
-    <section class="top-grid">
-      <div>
-        <label for="roomId">방 이름</label>
-        <input id="roomId" value="default" autocomplete="off">
-      </div>
-      <div>
-        <label>원격서버 API</label>
-        <div class="fixed-api">https://chatroom-271063202893.asia-northeast3.run.app</div>
-      </div>
-    </section>
+	<section class="top-grid">
+		<div>
+			<label for="roomId">방 이름</label>
+			<input id="roomId"  autocomplete="off" />
+		</div>
+		<div>
+			<label>원격서버 API</label>
+			<div class="fixed-api">https://chatroom-271063202893.asia-northeast3.run.app</div>
+		</div>
+	</section>
 
-    <section class="panels">
-      <div class="panel">
-        <h2>원격서버 텍스트</h2>
-        <textarea id="cloudText" placeholder="원격서버의 방 텍스트"></textarea>
-        <div class="actions">
-          <button id="loadCloudButton" type="button">원격서버 읽기</button>
-          <button id="saveCloudButton" type="button">원격서버 저장</button>
-        </div>
-        <div id="cloudStatus" class="status">대기 중</div>
-      </div>
+	<section class="panels">
+		<div class="panel">
+			<h2>원격서버 텍스트</h2>
+			<div id="cloudText" class="rich-editor" contenteditable="true" placeholder="원격서버의 방 텍스트 및 이미지"></div>
+			<div class="actions">
+				<button id="loadCloudButton" type="button">원격서버 읽기</button>
+				<button id="saveCloudButton" type="button">원격서버 저장</button>
+			</div>
+			<div id="cloudStatus" class="status">대기 중</div>
+		</div>
 
-      <div class="panel" data-local-only>
-        <h2>로컬서버 텍스트</h2>
-        <textarea id="localText" placeholder="VDI 로컬 서버의 방 텍스트"></textarea>
-        <div class="actions">
-          <button id="loadLocalButton" type="button">로컬서버 읽기</button>
-          <button id="saveLocalButton" type="button">로컬서버 저장</button>
-        </div>
-        <div id="localStatus" class="status">대기 중</div>
-      </div>
-    </section>
+		<div class="panel" data-local-only>
+			<h2>로컬서버 텍스트</h2>
+			<div id="localText" class="rich-editor" contenteditable="true" placeholder="VDI 로컬 서버의 방 텍스트 및 이미지"></div>
+			<div class="actions">
+				<button id="loadLocalButton" type="button">로컬서버 읽기</button>
+				<button id="saveLocalButton" type="button">로컬서버 저장</button>
+			</div>
+			<div id="localStatus" class="status">대기 중</div>
+		</div>
+	</section>
 
-    <section class="bridge-actions" data-local-only>
-      <button id="copyCloudToLocalButton" class="secondary" type="button">원격서버 -&gt; 로컬서버 복사</button>
-      <button id="copyLocalToCloudButton" class="secondary" type="button">로컬서버 -&gt; 원격서버 복사</button>
-    </section>
+	<section class="bridge-actions" data-local-only>
+		<button id="copyCloudToLocalButton" class="secondary" type="button">원격서버 -&gt; 로컬서버 복사</button>
+		<button id="copyLocalToCloudButton" class="secondary" type="button">로컬서버 -&gt; 원격서버 복사</button>
+	</section>
 
-    <section class="file-transfer" data-local-only>
-      <h2>로컬서버 파일 전송</h2>
-      <div class="file-row">
-        <div>
-          <label for="localFile">업무컴퓨터 파일 선택</label>
-          <input id="localFile" type="file">
-        </div>
-        <button id="uploadLocalFileButton" type="button">VDI로 전송</button>
-      </div>
-      <div id="fileStatus" class="status">대기 중</div>
-    </section>
-  </main>
+	<section class="file-transfer" data-local-only>
+		<h2>로컬서버 파일 전송</h2>
+		<div class="file-row">
+			<div>
+				<label for="localFile">업무컴퓨터 파일 선택</label>
+				<input id="localFile" type="file">
+			</div>
+			<button id="uploadLocalFileButton" type="button">VDI로 전송</button>
+		</div>
+		<div id="fileStatus" class="status">대기 중</div>
+	</section>
+</main>
 
-  <script>
-    const CLOUD_API_BASE = "https://chatroom-271063202893.asia-northeast3.run.app";
+<script>
+	const CLOUD_API_BASE = "https://chatroom-271063202893.asia-northeast3.run.app";
 
-    const cloudRunHost = new URL(CLOUD_API_BASE).hostname;
-    const isCloudRunPage = window.location.hostname === cloudRunHost;
+	const cloudRunHost = new URL(CLOUD_API_BASE).hostname;
+	const isCloudRunPage = window.location.hostname === cloudRunHost;
 
-    if (isCloudRunPage) {
-      document.querySelectorAll("[data-local-only]").forEach((element) => element.remove());
-      document.querySelector(".panels").classList.add("remote-only");
-    }
+	if (isCloudRunPage) {
+		document.querySelectorAll("[data-local-only]").forEach((element) => element.remove());
+		document.querySelector(".panels").classList.add("remote-only");
+	}
 
-    const roomInput = document.querySelector("#roomId");
-    const cloudText = document.querySelector("#cloudText");
-    const localText = document.querySelector("#localText");
-    const localFile = document.querySelector("#localFile");
-    const cloudStatus = document.querySelector("#cloudStatus");
-    const localStatus = document.querySelector("#localStatus");
-    const fileStatus = document.querySelector("#fileStatus");
+	const roomInput = document.querySelector("#roomId");
+	const cloudText = document.querySelector("#cloudText");
+	const localText = document.querySelector("#localText");
+	const localFile = document.querySelector("#localFile");
+	const cloudStatus = document.querySelector("#cloudStatus");
+	const localStatus = document.querySelector("#localStatus");
+	const fileStatus = document.querySelector("#fileStatus");
 
-    const buttons = {
-      loadCloud: document.querySelector("#loadCloudButton"),
-      saveCloud: document.querySelector("#saveCloudButton"),
-      loadLocal: document.querySelector("#loadLocalButton"),
-      saveLocal: document.querySelector("#saveLocalButton"),
-      copyCloudToLocal: document.querySelector("#copyCloudToLocalButton"),
-      copyLocalToCloud: document.querySelector("#copyLocalToCloudButton"),
-      uploadLocalFile: document.querySelector("#uploadLocalFileButton")
-    };
+	const buttons = {
+		loadCloud: document.querySelector("#loadCloudButton"),
+		saveCloud: document.querySelector("#saveCloudButton"),
+		loadLocal: document.querySelector("#loadLocalButton"),
+		saveLocal: document.querySelector("#saveLocalButton"),
+		copyCloudToLocal: document.querySelector("#copyCloudToLocalButton"),
+		copyLocalToCloud: document.querySelector("#copyLocalToCloudButton"),
+		uploadLocalFile: document.querySelector("#uploadLocalFileButton")
+	};
 
-    function roomId() {
-      return encodeURIComponent(roomInput.value.trim() || "default");
-    }
+	function roomId() {
+		return encodeURIComponent(roomInput.value.trim() || "default");
+	}
 
-    function normalizeBase(value) {
-      return value.trim().replace(/\/+$/, "");
-    }
+	function normalizeBase(value) {
+		return value.trim().replace(/\/+$/, "");
+	}
 
-    function cloudBase() {
-      return normalizeBase(CLOUD_API_BASE);
-    }
+	function cloudBase() {
+		return normalizeBase(CLOUD_API_BASE);
+	}
 
-    function localBase() {
-      return "";
-    }
+	function localBase() {
+		return "";
+	}
 
-    function endpoint(base) {
-      return `${base}/api/rooms/${roomId()}/text`;
-    }
+	function endpoint(base) {
+		return `${base}/api/rooms/${roomId()}/text`;
+	}
 
-    function fileEndpoint(base) {
-      return `${base}/api/files`;
-    }
+	function fileEndpoint(base) {
+		return `${base}/api/files`;
+	}
 
-    function setStatus(target, message) {
-      target.textContent = message;
-    }
+	function setStatus(target, message) {
+		target.textContent = message;
+	}
 
-    async function loadText(base, textarea, status, label) {
-      if (base === null) {
-        return;
-      }
+	// [추가] 이미지 데이터 처리를 위한 헬퍼 함수
+	// 복사-붙여넣기 시 이미지를 브라우저가 직접 인코딩하는 Base64 데이터로 변환하거나,
+	// 필요에 따라 일반 텍스트 및 HTML 요소를 부드럽게 주입하기 위해 사용됩니다.
+	function handlePasteEvent(e, targetElement) {
+		const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+		let hasImage = false;
 
-      const response = await fetch(endpoint(base));
-      if (!response.ok) {
-        throw new Error(`${label} load failed: ${response.status}`);
-      }
+		for (let item of items) {
+			if (item.type.indexOf("image") !== -1) {
+				hasImage = true;
+				const file = item.getAsFile();
+				const reader = new FileReader();
 
-      const data = await response.json();
-      textarea.value = data.text;
-      setStatus(status, `${label} '${data.roomId}' 읽기 완료`);
-    }
+				reader.onload = function(event) {
+					const img = document.createElement("img");
+					img.src = event.target.result; // Base64 인코딩된 이미지 문자열 데이터
 
-    async function saveText(base, textarea, status, label) {
-      if (base === null) {
-        return;
-      }
+					// 현재 사용자가 에디터창 내에서 클릭한 커서 위치(Selection)를 찾아 그 자리에 이미지 삽입
+					const selection = window.getSelection();
+					if (selection.rangeCount > 0) {
+						const range = selection.getRangeAt(0);
+						// 커서가 엉뚱한 데 있으면 에디터 자식으로 넣음
+						if (targetElement.contains(range.commonAncestorContainer)) {
+							range.deleteContents();
+							range.insertNode(img);
+							range.collapse(false);
+							return;
+						}
+					}
+					targetElement.appendChild(img);
+				};
+				reader.readAsDataURL(file);
+			}
+		}
 
-      const response = await fetch(endpoint(base), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textarea.value })
-      });
-      if (!response.ok) {
-        throw new Error(`${label} save failed: ${response.status}`);
-      }
+		if (hasImage) {
+			e.preventDefault(); // 이미지가 처리되었다면 브라우저의 기본 텍스트 붙여넣기 동작 방지
+		}
+	}
 
-      const data = await response.json();
-      textarea.value = data.text;
-      setStatus(status, `${label} '${data.roomId}' 저장 완료`);
-    }
+	// [수정] textarea.value 대신 contenteditable의 innerHTML 속성을 다루도록 API 통신 로직 변경
+	async function loadText(base, textarea, status, label) {
+		if (base === null) {
+			return;
+		}
 
-    async function uploadLocalFile() {
-      if (localFile.files.length === 0) {
-        setStatus(fileStatus, "전송할 파일을 선택하세요.");
-        return;
-      }
+		const response = await fetch(endpoint(base));
+		if (!response.ok) {
+			throw new Error(`${label} load failed: ${response.status}`);
+		}
 
-      const formData = new FormData();
-      formData.append("file", localFile.files[0]);
+		const data = await response.json();
+		// [변경] 이미지가 텍스트(HTML) 상태로 저장되어 오므로 innerHTML을 사용합니다.
+		textarea.innerHTML = data.text || "";
+		setStatus(status, `${label} '${data.roomId}' 읽기 완료`);
+	}
 
-      const response = await fetch(fileEndpoint(localBase()), {
-        method: "POST",
-        body: formData
-      });
-      if (!response.ok) {
-        throw new Error(`file upload failed: ${response.status}`);
-      }
+	async function saveText(base, textarea, status, label) {
+		if (base === null) {
+			return;
+		}
 
-      const data = await response.json();
-      setStatus(fileStatus, `${data.fileName} 전송 완료 (${data.size} bytes)`);
-    }
+		const response = await fetch(endpoint(base), {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ text: textarea.innerHTML }) // [변경] innerHTML로 글+이미지 데이터 모두 전송
+		});
+		if (!response.ok) {
+			throw new Error(`${label} save failed: ${response.status}`);
+		}
 
-    async function run(action, status) {
-      try {
-        await action();
-      } catch (error) {
-        setStatus(status, "연결 실패");
-      }
-    }
+		const data = await response.json();
+		textarea.innerHTML = data.text || "";
+		setStatus(status, `${label} '${data.roomId}' 저장 완료`);
+	}
 
-    buttons.loadCloud.addEventListener("click", () => {
-      run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
-    });
-    buttons.saveCloud.addEventListener("click", () => {
-      run(() => saveText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
-    });
+	async function uploadLocalFile() {
+		if (localFile.files.length === 0) {
+			setStatus(fileStatus, "전송할 파일을 선택하세요.");
+			return;
+		}
 
-    if (!isCloudRunPage) {
-      buttons.loadLocal.addEventListener("click", () => {
-        run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
-      });
-      buttons.saveLocal.addEventListener("click", () => {
-        run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
-      });
-      buttons.copyCloudToLocal.addEventListener("click", () => {
-        localText.value = cloudText.value;
-        run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
-      });
-      buttons.copyLocalToCloud.addEventListener("click", () => {
-        cloudText.value = localText.value;
-        run(() => saveText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
-      });
-      buttons.uploadLocalFile.addEventListener("click", () => {
-        run(uploadLocalFile, fileStatus);
-      });
+		const formData = new FormData();
+		formData.append("file", localFile.files[0]);
 
-      run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
-    } else {
-      run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
-    }
-  </script>
+		const response = await fetch(fileEndpoint(localBase()), {
+			method: "POST",
+			body: formData
+		});
+		if (!response.ok) {
+			throw new Error(`file upload failed: ${response.status}`);
+		}
+
+		const data = await response.json();
+		setStatus(fileStatus, `${data.fileName} 전송 완료 (${data.size} bytes)`);
+	}
+
+	async function run(action, status) {
+		try {
+			await action();
+		} catch (error) {
+			setStatus(status, "연결 실패");
+		}
+	}
+
+	// [추가] 두 입력창에 각각 paste 이벤트 리스너를 결합
+	cloudText.addEventListener("paste", (e) => handlePasteEvent(e, cloudText));
+	if (!isCloudRunPage) {
+		localText.addEventListener("paste", (e) => handlePasteEvent(e, localText));
+	}
+
+	buttons.loadCloud.addEventListener("click", () => {
+		run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+	});
+	buttons.saveCloud.addEventListener("click", () => {
+		run(() => saveText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+	});
+
+	if (!isCloudRunPage) {
+		buttons.loadLocal.addEventListener("click", () => {
+			run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+		});
+		buttons.saveLocal.addEventListener("click", () => {
+			run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+		});
+		buttons.copyCloudToLocal.addEventListener("click", () => {
+			// [변경] .value 대신 .innerHTML 구조 복사
+			localText.innerHTML = cloudText.innerHTML;
+			run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+		});
+		buttons.copyLocalToCloud.addEventListener("click", () => {
+			// [변경] .value 대신 .innerHTML 구조 복사
+			cloudText.innerHTML = localText.innerHTML;
+			run(() => saveText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+		});
+		buttons.uploadLocalFile.addEventListener("click", () => {
+			run(uploadLocalFile, fileStatus);
+		});
+
+		run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+	} else {
+		run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+	}
+</script>
 </body>
 </html>
