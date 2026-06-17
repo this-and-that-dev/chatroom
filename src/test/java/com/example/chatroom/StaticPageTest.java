@@ -28,6 +28,11 @@ class StaticPageTest {
             .contains("class=\"bridge-actions\" data-local-only")
             .contains("class=\"file-transfer\" data-local-only")
             .contains("classList.add(\"remote-only\")")
+            .contains("const ROOM_ID_COOKIE_NAME")
+            .contains("loadSavedRoomId()")
+            .contains("saveRoomIdCookie(roomId)")
+            .contains("채팅방 이름을 입력하세요.")
+            .contains("roomInput.focus()")
             .contains("원격서버 API")
             .contains("원격서버 텍스트")
             .contains("로컬서버 텍스트")
@@ -39,6 +44,7 @@ class StaticPageTest {
             .doesNotContain("id=\"refreshBothButton\"")
             .doesNotContain("양쪽 읽기")
             .doesNotContain("Cloud Run")
-            .doesNotContain(">Local ");
+            .doesNotContain(">Local ")
+            .doesNotContain("|| \"default\"");
     }
 }

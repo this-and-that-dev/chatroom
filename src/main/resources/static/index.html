@@ -259,6 +259,7 @@
 
 <script>
 	const CLOUD_API_BASE = "https://chatroom-271063202893.asia-northeast3.run.app";
+	const ROOM_ID_COOKIE_NAME = "chatroom_room_id";
 
 	const cloudRunHost = new URL(CLOUD_API_BASE).hostname;
 	const isCloudRunPage = window.location.hostname === cloudRunHost;
@@ -286,8 +287,38 @@
 		uploadLocalFile: document.querySelector("#uploadLocalFileButton")
 	};
 
-	function roomId() {
-		return encodeURIComponent(roomInput.value.trim() || "default");
+	function loadSavedRoomId() {
+		const cookie = document.cookie
+			.split("; ")
+			.find((value) => value.startsWith(`${ROOM_ID_COOKIE_NAME}=`));
+		if (!cookie) {
+			return false;
+		}
+
+		roomInput.value = decodeURIComponent(cookie.split("=").slice(1).join("="));
+		return true;
+	}
+
+	function saveRoomIdCookie(roomId) {
+		const maxAge = 60 * 60 * 24 * 365;
+		document.cookie = `${ROOM_ID_COOKIE_NAME}=${encodeURIComponent(roomId)}; max-age=${maxAge}; path=/; SameSite=Lax`;
+	}
+
+	function currentRoomId() {
+		const roomId = roomInput.value.trim();
+		if (!roomId) {
+			alert("채팅방 이름을 입력하세요.");
+			roomInput.focus();
+			return null;
+		}
+
+		saveRoomIdCookie(roomId);
+		return roomId;
+	}
+
+	function encodedRoomId() {
+		const roomId = currentRoomId();
+		return roomId === null ? null : encodeURIComponent(roomId);
 	}
 
 	function normalizeBase(value) {
@@ -303,7 +334,8 @@
 	}
 
 	function endpoint(base) {
-		return `${base}/api/rooms/${roomId()}/text`;
+		const roomId = encodedRoomId();
+		return roomId === null ? null : `${base}/api/rooms/${roomId}/text`;
 	}
 
 	function fileEndpoint(base) {
@@ -360,7 +392,12 @@
 			return;
 		}
 
-		const response = await fetch(endpoint(base));
+		const url = endpoint(base);
+		if (url === null) {
+			return;
+		}
+
+		const response = await fetch(url);
 		if (!response.ok) {
 			throw new Error(`${label} load failed: ${response.status}`);
 		}
@@ -376,7 +413,12 @@
 			return;
 		}
 
-		const response = await fetch(endpoint(base), {
+		const url = endpoint(base);
+		if (url === null) {
+			return;
+		}
+
+		const response = await fetch(url, {
 			method: "PUT",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ text: textarea.innerHTML }) // [변경] innerHTML로 글+이미지 데이터 모두 전송
@@ -420,6 +462,8 @@
 	}
 
 	// [추가] 두 입력창에 각각 paste 이벤트 리스너를 결합
+	loadSavedRoomId();
+
 	cloudText.addEventListener("paste", (e) => handlePasteEvent(e, cloudText));
 	if (!isCloudRunPage) {
 		localText.addEventListener("paste", (e) => handlePasteEvent(e, localText));
@@ -440,11 +484,17 @@
 			run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
 		});
 		buttons.copyCloudToLocal.addEventListener("click", () => {
+			if (currentRoomId() === null) {
+				return;
+			}
 			// [변경] .value 대신 .innerHTML 구조 복사
 			localText.innerHTML = cloudText.innerHTML;
 			run(() => saveText(localBase(), localText, localStatus, "로컬서버"), localStatus);
 		});
 		buttons.copyLocalToCloud.addEventListener("click", () => {
+			if (currentRoomId() === null) {
+				return;
+			}
 			// [변경] .value 대신 .innerHTML 구조 복사
 			cloudText.innerHTML = localText.innerHTML;
 			run(() => saveText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
@@ -453,9 +503,13 @@
 			run(uploadLocalFile, fileStatus);
 		});
 
-		run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+		if (roomInput.value.trim()) {
+			run(() => loadText(localBase(), localText, localStatus, "로컬서버"), localStatus);
+		}
 	} else {
-		run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+		if (roomInput.value.trim()) {
+			run(() => loadText(cloudBase(), cloudText, cloudStatus, "원격서버"), cloudStatus);
+		}
 	}
 </script>
 </body>
